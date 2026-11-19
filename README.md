@@ -97,3 +97,8 @@ Aishwarya
 License
 
 This project is developed for academic purposes.
+
+## Application Dashboard
+
+![LogFusion Dashboard](screenshots/dashboard.png)
+
