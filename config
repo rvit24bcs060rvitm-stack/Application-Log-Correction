@@ -1,0 +1,8 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+[remote "origin"]
+	url = https://github.com/rvit24bcs060rvitm-stack/Application-Log-Correction.git
+	fetch = +refs/heads/*:refs/remotes/origin/*

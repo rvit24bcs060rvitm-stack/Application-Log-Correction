@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>LogFusion - Application Log Analysis</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<header class="header">
+    <h1>LogFusion</h1>
+    <p>Application Log Correlation & Timeline Reconstruction</p>
+</header>
+
+<main class="container">
+
+    <!-- Upload -->
+    <section class="card upload-card">
+
+        <h2>Upload Application Logs</h2>
+
+        <p>Upload multiple log files for intelligent analysis.</p>
+
+        <form method="POST" enctype="multipart/form-data">
+
+            <input type="file" name="logs" multiple required>
+
+            <button type="submit">Analyze Logs</button>
+
+        </form>
+
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+
+    </section>
+
+
+    {% if timeline is defined %}
+
+    <!-- SUMMARY -->
+    <section class="summary-grid">
+
+        <div class="summary-card">
+            <h3>Total Events</h3>
+            <p>{{ total_events }}</p>
+        </div>
+
+        <div class="summary-card">
+            <h3>Correlated Requests</h3>
+            <p>{{ total_requests }}</p>
+        </div>
+
+        <div class="summary-card">
+            <h3>Detected Issues</h3>
+            <p>{{ issues|length }}</p>
+        </div>
+
+        <div class="summary-card">
+            <h3>Failed Requests</h3>
+            <p>{{ failed_requests|length }}</p>
+        </div>
+
+        <div class="summary-card">
+            <h3>Anomalies</h3>
+            <p>{{ anomalies|length }}</p>
+        </div>
+
+    </section>
+
+
+    <!-- SEVERITY -->
+    <section class="card">
+
+        <h2>Log Severity Statistics</h2>
+
+        <div class="severity-grid">
+
+            {% for name, count in severity_statistics.items() %}
+
+            <div class="severity-card">
+                <h3>{{ name }}</h3>
+                <p>{{ count }}</p>
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </section>
+
+
+    <!-- TIMELINE -->
+    <section class="card">
+
+        <h2>Chronological Timeline</h2>
+
+        {% if timeline %}
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Source File</th>
+                        <th>Severity</th>
+                        <th>Event Message</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for event in timeline %}
+
+                    <tr>
+                        <td>{{ event.timestamp }}</td>
+                        <td>{{ event.source }}</td>
+                        <td>
+                            <span class="severity {{ event.severity|lower }}">
+                                {{ event.severity }}
+                            </span>
+                        </td>
+                        <td>{{ event.message }}</td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <p>No valid timestamped events found.</p>
+
+        {% endif %}
+
+    </section>
+
+
+    <!-- CORRELATION -->
+    <section class="card">
+
+        <h2>Event Correlation</h2>
+
+        {% for request_id, events in correlated.items() %}
+
+        <div class="request-card">
+
+            <h3>Request ID: {{ request_id }}</h3>
+
+            <p>{{ events|length }} related events</p>
+
+            {% for event in events %}
+
+            <div class="event-line">
+
+                {{ event.timestamp }}
+                —
+                {{ event.source }}
+                —
+                {{ event.message }}
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <p>No correlated requests found.</p>
+
+        {% endfor %}
+
+    </section>
+
+
+    <!-- FAILED REQUESTS -->
+    <section class="card">
+
+        <h2>Failed Requests</h2>
+
+        {% for request in failed_requests %}
+
+        <div class="alert-card danger">
+
+            <h3>Failed Request</h3>
+
+            <p>Request ID: {{ request.request_id }}</p>
+
+            <p>{{ request.details }}</p>
+
+            {% for event in request.events %}
+
+            <p>{{ event.timestamp }} — {{ event.message }}</p>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <p>No failed requests detected.</p>
+
+        {% endfor %}
+
+    </section>
+
+
+    <!-- DURATION -->
+    <section class="card">
+
+        <h2>Request Duration Analysis</h2>
+
+        {% if durations %}
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Request ID</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Duration (Seconds)</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for request in durations %}
+
+                    <tr>
+                        <td>{{ request.request_id }}</td>
+                        <td>{{ request.start_time }}</td>
+                        <td>{{ request.end_time }}</td>
+                        <td>{{ "%.2f"|format(request.duration) }}</td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <p>Duration information unavailable.</p>
+
+        {% endif %}
+
+    </section>
+
+
+    <!-- SLOW REQUESTS -->
+    <section class="card">
+
+        <h2>Slow Requests</h2>
+
+        {% for request in slow_requests %}
+
+        <div class="alert-card warning">
+
+            <h3>Slow Request</h3>
+
+            <p>Request ID: {{ request.request_id }}</p>
+
+            <p>
+                Duration:
+                {{ request.duration }} seconds
+            </p>
+
+            <p>{{ request.details }}</p>
+
+        </div>
+
+        {% else %}
+
+        <p>No slow requests detected.</p>
+
+        {% endfor %}
+
+    </section>
+
+
+    <!-- ANOMALIES -->
+    <section class="card">
+
+        <h2>Anomaly Detection</h2>
+
+        {% for anomaly in anomalies %}
+
+        <div class="alert-card warning">
+
+            <h3>{{ anomaly.type }}</h3>
+
+            <p>Severity: {{ anomaly.severity }}</p>
+
+            <p>{{ anomaly.details }}</p>
+
+            <p>Request ID: {{ anomaly.request_id }}</p>
+
+        </div>
+
+        {% else %}
+
+        <p>No anomalies detected.</p>
+
+        {% endfor %}
+
+    </section>
+
+
+    <!-- INCIDENT IMPACT -->
+    <section class="card">
+
+        <h2>Incident Impact Analysis</h2>
+
+        <div class="impact-card">
+
+            <h3>
+                Impact Level:
+                <span class="{{ incident_impact.level|lower }}">
+                    {{ incident_impact.level }}
+                </span>
+            </h3>
+
+            <p>
+                Affected Requests:
+                <strong>{{ incident_impact.total_impacted }}</strong>
+            </p>
+
+            <p>{{ incident_impact.message }}</p>
+
+            {% if incident_impact.request_ids %}
+
+            <p>
+                Affected IDs:
+                {{ incident_impact.request_ids|join(", ") }}
+            </p>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+
+    <!-- DETECTED ISSUES -->
+    <section class="card">
+
+        <h2>Detected Issues</h2>
+
+        {% for issue in issues %}
+
+        <div class="alert-card danger">
+
+            <h3>{{ issue.issue }}</h3>
+
+            <p>Request: {{ issue.request_id }}</p>
+
+            <p>{{ issue.details }}</p>
+
+        </div>
+
+        {% else %}
+
+        <p>No incomplete requests detected.</p>
+
+        {% endfor %}
+
+    </section>
+
+    {% endif %}
+
+</main>
+
+
+<footer>
+    <p>LogFusion | Application Log Correlation and Timeline Reconstruction</p>
+    <p>Project 31</p>
+</footer>
+
+</body>
+</html>
